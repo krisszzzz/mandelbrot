@@ -1,0 +1,2 @@
+/usr/bin/ar qc libresource_manager.a CMakeFiles/resource_manager.dir/src/shader_handler.cpp.o
+/usr/bin/ranlib libresource_manager.a
