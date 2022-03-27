@@ -118,7 +118,10 @@ enum SHADER_HANDLER_STATUS
         SHADERS_COMPILATION_VALIDATION_ERROR,
         SHADERS_COMPILATION_UNKNOWN_SHADER_TYPE,
         SHADERS_COMPILATION_SYNTAX_ERROR,
+
         SHADERS_LINKING_VALIDATION_ERROR,
+        SHADERS_LINKING_UNITIALIZED,
+        SHADERS_LINKING_UNCOMPILED,
 
 // BIN_SHADERS LINKING ERRORS
         BIN_SHADERS_LINKING_BIN_UNITIALIZED,
@@ -144,20 +147,21 @@ enum SHADER_HANDLER_ERRORS
         SHE_VALIDATOR_ERROR,
         SHE_INCCORECT_STATUS,
         SHE_BIN_SHADERS_INCCORECT_SHADER_COUNT,
-        SHE_SHADER_COUNT_DISMATCH
+        SHE_SHADER_COUNT_DISMATCH,
+        SHE_PROGRAM_LINK_ERROR
 };
 
 char*   file_to_buffer(FILE* source, int* buffer_size);
 char*   load_file_source(const char *const src_file_path);
 int     destroy_shaders(bin_shaders* binary_shaders);
-int     shader_link(shader_program* prog_to_link, bin_shaders* binary_shaders);
 int     validate_shader(shader* curr_shader, const char* shader_path);
 int     shader_validator(shader* shader_name);
+int     shaders_link_(shader_program* prog_to_link, int binary_count, ...);
 
-int     bin_shaders_log_(bin_shaders* binary_shaders, char* bin_shaders_name);
+int     bin_shaders_log_(bin_shaders* binary_shaders, char* bin_shaders_name,
+                         char** shaders_names = nullptr);
 
 int     shaders_compile_(bin_shaders* binary_shaders, int shader_count, ...);
-void    shader_write_info(shader* shader_to_write, int logical_number);
 int     init_shaders_types_(bin_shaders* save_shaders, int shader_type_count, ...);
 
 
@@ -169,5 +173,8 @@ int     init_shaders_types_(bin_shaders* save_shaders, int shader_type_count, ..
 
 #define shaders_compile(binary_shaders, ...)            \
         shaders_compile_(binary_shaders, ARGC(__VA_ARGS__), __VA_ARGS__)
+
+#define shaders_link(prog_to_link, ...)         \
+        shaders_link_(prog_to_link, ARGC(__VA_ARGS__), __VA_ARGS__)
 
 #endif // SHADER_HANDLER_H_

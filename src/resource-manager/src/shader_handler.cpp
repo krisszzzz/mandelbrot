@@ -105,6 +105,7 @@ static long long save_bit(long long value, int bit_position)
 
 #define check_stat(status)  \
         check_shader_status(shader_status, status)
+
 #define check_bin_stat(status) \
         check_shader_status(bin_status, status)
 
@@ -122,17 +123,32 @@ int status_validator(long long shader_status)
         error_count += check_stat(SHADERS_COMPILATION_FAILED);
         error_count += check_stat(SHADERS_LINKING_FAILED);
 // Init error
-        error_count += check_stat(SHADERS_INITIALIZATION_UNKNOWN_SHADER_TYPE);
-// Compilation error
-        error_count += check_stat(SHADERS_COMPILATION_VALIDATION_ERROR);
-        error_count += check_stat(SHADERS_COMPILATION_NO_INITIALIZATION_ERROR);
-        error_count += check_stat(SHADERS_COMPILATION_FILE_LOAD_ERROR);
-        error_count += check_stat(SHADERS_COMPILATION_UNKNOWN_SHADER_TYPE);
-        error_count += check_stat(SHADERS_COMPILATION_SYNTAX_ERROR);
+//         error_count += check_stat(SHADERS_INITIALIZATION_UNKNOWN_SHADER_TYPE);
+// // Compilation error
+//         error_count += check_stat(SHADERS_COMPILATION_VALIDATION_ERROR);
+//         error_count += check_stat(SHADERS_COMPILATION_NO_INITIALIZATION_ERROR);
+//         error_count += check_stat(SHADERS_COMPILATION_FILE_LOAD_ERROR);
+//         error_count += check_stat(SHADERS_COMPILATION_UNKNOWN_SHADER_TYPE);
+//         error_count += check_stat(SHADERS_COMPILATION_SYNTAX_ERROR);
+// // Linking error
+//         error_count += check_stat(SHADERS_LINKING_VALIDATION_ERROR);
+//         error_count += check_stat(SHADERS_LINKING_UNITIALIZED_ERROR);
+//         error_count += check_stat(SHADERS_LINKING_UNCOMPILED);
 
-        if(error_count) {
+        if (error_count) {
                 return SHE_ERROR;
         }
+
+        // if (!validate_shader_type(SHADER(iter_count).shader_type)) {
+
+        //         set_shad_status(SHADERS_COMPILATION_UNKNOWN_SHADER_TYPE);
+        //         set_shad_status(SHADERS_COMPILATION_FAILED);
+
+        //         is_error = 1;
+
+        // }
+
+
 
         if (!check_stat(SHADERS_INITIALIZED) && (check_stat(SHADERS_LINKED) ||
                                                 check_stat(SHADERS_COMPILED))) {
@@ -190,7 +206,7 @@ static void shader_write_errors(long long shader_status, int shader_stage)
                 }
         }
 
-        if(shader_stage == SHADER_STAGE_COMPILATION) {
+        if (shader_stage == SHADER_STAGE_COMPILATION) {
 
                 if (!check_stat(SHADERS_COMPILED)) {
                         printf(GREEN "NOT_STARTED\n" END);
@@ -208,7 +224,7 @@ static void shader_write_errors(long long shader_status, int shader_stage)
                 }
 
                 if (check_stat(SHADERS_COMPILATION_VALIDATION_ERROR)) {
-                        printf(FATAL_RED "VALIDATION_ERROR " END);
+                        printf(FATAL_RED "INVALID_SHADER " END);
                         is_error = 1;
                 }
 
@@ -219,6 +235,41 @@ static void shader_write_errors(long long shader_status, int shader_stage)
 
                 if (check_stat(SHADERS_COMPILATION_SYNTAX_ERROR)) {
                         printf(RED "SYNTAX_ERROR " END);
+                        is_error = 1;
+                }
+
+                if(check_stat(SHADERS_COMPILATION_FAILED) && !is_error) {
+                        printf(RED "UNEXPECT_ERROR " END);
+                        is_error = 1;
+                }
+
+
+        }
+
+        if (shader_stage == SHADER_STAGE_LINKING) {
+
+                if(!(check_stat(SHADERS_LINKED))) {
+                        printf(GREEN "NOT_STARTED\n" END);
+                        return;
+                }
+
+                if(check_stat(SHADERS_LINKING_VALIDATION_ERROR)) {
+                        printf(FATAL_RED "INVALID_SHADER " END);
+                        is_error = 1;
+                }
+
+                if(check_stat(SHADERS_LINKING_UNITIALIZED)) {
+                        printf(RED "UNITIALIZED " END);
+                        is_error = 1;
+                }
+
+                if(check_stat(SHADERS_LINKING_UNCOMPILED)) {
+                        printf(RED "UNCOMPILED " END);
+                        is_error = 1;
+                }
+
+                if(check_stat(SHADERS_LINKING_FAILED) && !is_error) {
+                        printf(RED "UNEXPECTED_ERROR " END);
                         is_error = 1;
                 }
 
@@ -233,13 +284,11 @@ static void shader_write_errors(long long shader_status, int shader_stage)
 
 static void shader_status_write(long long shader_status, int shader_struct_type)
 {
-        printf("status info: I - initialized, C - compiled, L - linked\n"
-               "I C L\n");
+
          if (shader_status == SHADERS_DESTROYED) {
                 printf(RED "❌❌❌" FATAL_RED " DESTROYED" RED);
                 return;
          }
-
 
         if (check_stat(SHADERS_INITIALIZATION_FAILED)) {
                 printf(RED "❌" END);
@@ -282,45 +331,52 @@ static void shader_status_write(long long shader_status, int shader_struct_type)
 
 }
 
-void shader_write_info(shader* shader_to_write, int logical_number)
+static void shader_write_info(shader* shader_to_write, int logical_number, char* shader_name = nullptr)
 {
         if(shader_to_write == nullptr) {
                 ErrorPrint("nullptr error\n");
                 return;
         }
 
-        printf("__________________________________"
-               "__________________________________\n");
-        printf("Shader info: \n"
-               "Shader_hash   = %d\n",
-               shader_to_write->shader_hash);
+        printf(YELLOW "__________________________________"
+                      "__________________________________\n" END);
+        printf(YELLOW "Shader info: \n"
+                      "Shader_hash   = %d\n" END,
+                      shader_to_write->shader_hash);
 
-        printf("shader_count  = ");
+        if(shader_name) {
+                printf("shader related path: %s\n", shader_name);
+        }
+
+        printf(YELLOW "shader_count  = " END);
 
         if(logical_number == -1)
-                printf("unknown\n");
+                printf(YELLOW "unknown\n" END);
         else
-                printf("%d\n", logical_number);
+                printf(YELLOW "%d\n" END, logical_number);
 
-        printf("shader_type   = %s (%d)\n"
-               "shader_id     = %d\n"
-               "shader_status = %d\n"
-               "PRETTY_STATUS:\n",
-               define_shader_type(shader_to_write->shader_type),
-               shader_to_write->shader_type,
-               shader_to_write->shader_id,
-               shader_to_write->status
+        printf(YELLOW "shader_type   = %s (%d)\n"
+                      "shader_id     = %d\n"
+                      "shader_status = %d\n"
+                      "PRETTY_STATUS:\n" END,
+                      define_shader_type(shader_to_write->shader_type),
+                      shader_to_write->shader_type,
+                      shader_to_write->shader_id,
+                      shader_to_write->status
                );
+
+        printf(YELLOW "status info: I - initialized, C - compiled, L - linked\n"
+               "I C L\n" END);
 
         shader_status_write(shader_to_write->status, SHADER_STRUCT_SHADER);
 
-        printf("__________________________________"
-               "__________________________________\n");
+        printf(YELLOW "__________________________________"
+                      "__________________________________\n" END);
 
 }
 
 
-int bin_shaders_log_(bin_shaders* binary_shaders, char* bin_shaders_name)
+int bin_shaders_log_(bin_shaders* binary_shaders, char* bin_shaders_name, char** shaders_names)
 {
         if(binary_shaders == nullptr) {
                 ErrorPrint("nullptr shaders\n");
@@ -333,26 +389,27 @@ int bin_shaders_log_(bin_shaders* binary_shaders, char* bin_shaders_name)
 
         int is_bin_shaders_log = 1;
 
-        printf("----------------------------------"
-               "----------------------------------\n"
-               "bin_shaders log:\n"
-               "bin_shaders name - %s\n"
-               "bin_shaders shader_count - %d\n",
-               bin_shaders_name,
-               binary_shaders->shader_count);
+        printf(BLUE  "++++++++++++++++++++++++++++++++++"
+                     "++++++++++++++++++++++++++++++++++\n"
+                     "bin_shaders log:\n"
+                     "bin_shaders name - %s\n"
+                     "bin_shaders shader_count - %d\n" END,
+                      bin_shaders_name,
+                      binary_shaders->shader_count);
 
-        printf("_________________________________"
-               "_________________________________\n"
-               "BUILD LOG\n");
+        printf(BLUE  "__________________________________"
+                     "__________________________________\n"
+                     "BUILD LOG\n" END);
 
+        printf(BLUE  "status info: I - initialized, C - compiled, L - linked\n"
+               "I C L\n" END);
 // TODO::: Write bin_shaders own error handler
         shader_status_write(binary_shaders->status, SHADER_STRUCT_BIN_SHADER);
 
-        printf("__________________________________"
-               "__________________________________\n");
+        printf(BLUE  "__________________________________"
+                     "__________________________________\n\n" END);
 
-        printf("INDIVIDUAL SHADERS LOG\n");
-
+        printf(YELLOW "INDIVIDUAL SHADERS LOG\n" END);
 
 
         for(int iter_count = 0; iter_count < binary_shaders->shader_count; ++iter_count)
@@ -360,8 +417,8 @@ int bin_shaders_log_(bin_shaders* binary_shaders, char* bin_shaders_name)
                 shader_write_info(&binary_shaders->shaders[iter_count], iter_count);
         }
 
-              printf("----------------------------------"
-                     "----------------------------------\n");
+              printf(BLUE  "++++++++++++++++++++++++++++++++++"
+                           "++++++++++++++++++++++++++++++++++\n" END);
 }
 
 
@@ -452,6 +509,13 @@ static int shaders_compile_error_handler(bin_shaders* binary_shaders, char* shad
 
         int is_error = 0;
 
+        if (status_validator(SHADER(iter_count).status)) {
+                set_shad_status(SHADERS_COMPILATION_VALIDATION_ERROR);
+                set_shad_status(SHADERS_COMPILATION_FAILED);
+
+                is_error = 1;
+        }
+
         if (shader_source == nullptr) {
                 printf(RED "FATAL ERROR: " END
                        "Cannot load shader source. Skipping this shader compilation\n");
@@ -460,14 +524,6 @@ static int shaders_compile_error_handler(bin_shaders* binary_shaders, char* shad
                 set_shad_status(SHADERS_COMPILATION_FAILED);
                 is_error = 1;
         }
-
-        if (status_validator(SHADER(iter_count).status)) {
-                set_shad_status(SHADERS_COMPILATION_VALIDATION_ERROR);
-                set_shad_status(SHADERS_COMPILATION_FAILED);
-
-                is_error = 1;
-        }
-
 
         if (!check_shader_status(SHADER(iter_count).status, SHADERS_INITIALIZED)) {
                 set_shad_status(SHADERS_COMPILATION_NO_INITIALIZATION_ERROR);
@@ -556,7 +612,7 @@ int shaders_compile_(bin_shaders* binary_shaders, int shader_count, ...)
 
         if (binary_shaders->shader_count <= 0) {
                 printf(CYAN "Warning:" END
-                       "Current bin_shaders is has shader_count = 0"
+                       "Current bin_shaders is has shader_count <= 0"
                        " no one shader will be compiled or checked\n");
                 set_bin_status(SHADERS_COMPILATION_FAILED);
                 return SHE_BIN_SHADERS_INCCORECT_SHADER_COUNT;
@@ -566,6 +622,7 @@ int shaders_compile_(bin_shaders* binary_shaders, int shader_count, ...)
                 printf(RED "Error: " END
                        "bin_shaders shader_count isn't equal to argument count\n"
                        );
+
                 set_bin_status(SHADERS_COMPILATION_FAILED);
                 return SHE_SHADER_COUNT_DISMATCH;
         }
@@ -606,7 +663,7 @@ int shaders_compile_(bin_shaders* binary_shaders, int shader_count, ...)
                 set_shad_status(SHADERS_COMPILED);
                 free(shader_source);
 
-                if (!shader_compile_status(binary_shaders, shader_path, iter_count)) {
+                if (shader_compile_status(binary_shaders, shader_path, iter_count)) {
                         set_bin_status(SHADERS_COMPILATION_FAILED);
                 }
 
@@ -616,126 +673,159 @@ int shaders_compile_(bin_shaders* binary_shaders, int shader_count, ...)
 
 }
 
-// static int shader_validate(shader* shader_to_handle)
-// {
-//        if(shader_to_handle == nullptr) {
-//                ErrorPrint("Cannot handle nullptr shader\n");
-//                return SHE_NULLPTR;
-//        }
-
-//        if(!check_shader_status(shader_to_handle->status, SHADER_INITIALIZED)) {
-//                printf(BLUE "Linking error: " END "shader unitialized\n");
-//                shader_write_info(shader_to_handle, logical_number);
-//                return SHE_SHADER_UNITIALIZED;
-//        }
-
-//        if(!check_shader_status(shader_to_handle->status, SHADER_COMPILED)) {
-
-//                printf(BLUE "Linking error: " END "shader uncompiled. Skip\n");
-//                shader_write_info(shader_to_handle, logical_number);
-//                return SHE_SHADER_UNCOMPILED;
-
-//        }
-
-//        if(check_shader_status(shader_to_handle->status, SHADER_COMPILATION_FAILED) == 0) {
-//                printf(BLUE "Linking error:" END " cannot link, because shader compile with errors\n");
-//                shader_write_info(shader_to_handle, logical_number);
-//                return SHE_SHADER_NO_COMPILE_BUT_LINK;
-//        }
-//        if(check_shader_status(shader_to_shadle->status, SHADER_DESTROYED)) {
-//                printf(BLUE "Linking error:" END " cannot link, because shader was already destroyed\n");
-//                shader_write_info(shader_to_handle, logical_number);
-//                return SHE_SHADER_DESTROYED;
-//        }
-
-//        if(check_shader_status(shader_to_handle->status, SHADER_LINKED)) {
-//                printf(YELLOW "Linking warning: " END " already linked shader. It is probably error\n");
-//                shader_write_info(shader_to_handle, logical_number);
-//        }
-
-//        return 0;
+static int shader_to_link_validate(bin_shaders* binary_shaders, int iter_count)
+{
+       if (binary_shaders == nullptr) {
+               ErrorPrint(FATAL_RED "ERROR:" END " cannot handle nullptr shader\n");
+               // set_bin_(SHADER_NULLPTR);
+               return SHE_ERROR;
+       }
 
 
-// }
+       set_shad_status(SHADERS_LINKED);
 
-// static int validate_bin(bin_shaders* binary_shaders, long long bin_status)
-// {
-//         int is_error = 0;
-//         if(!check_bin_stat(SHADERS_INITIALIZED)) {
-//                 set_bin_status(BIN_SHADERS_LINKING_BIN_UNITIALIZED);
-//                 is_error = 1;
-//         }
-//         if(!check_bin_stat(SHADERS_COMPILED)) {
-//                 set_bin_status(BIN_SHADERS_LINKING_BIN_UNCOMPILED);
-//                 is_error = 1;
-//         }
+       if (!check_shader_status(binary_shaders->status, SHADERS_INITIALIZED)) {
+               set_shad_status(SHADERS_LINKING_UNITIALIZED);
+               set_shad_status(SHADERS_LINKING_FAILED);
+               set_bin_status(SHADERS_LINKING_FAILED);
 
-//         if(check_bin_stat(SHADERS_COMPILATION_FAILED)    ||
-//            check_bin_stat(SHADERS_INITIALIZATION_FAILED) ||
-//            check_bin_stat(SHADERS_LINKING_FAILED)) {
-//                 set_bin_status(BIN_SHADERS_LINKING_BIN_WITH_ERRORS);
-//                 is_error = 1;
-//         }
+               return SHE_ERROR;
+       }
 
-//         return is_error : 1 ? 0;
-// }
+       if (!check_shader_status(binary_shaders->status, SHADERS_COMPILED)) {
+               set_shad_status(SHADERS_LINKING_UNCOMPILED);
+               set_shad_status(SHADERS_LINKING_FAILED);
+               set_bin_status(SHADERS_LINKING_FAILED);
 
+               return SHE_ERROR;
+       }
 
-// int shader_link(shader_program* prog_to_link, int binary_count, ...)
-// {
-//         if (prog_to_link == nullptr) {
-//                 ErrorPrint(FATAL_RED "ERROR: " END
-//                            "pointer to program in shader_link is nullptr\n");
-//                 return SHE_PROGRAM_LINK_ERROR;
-//         }
+       if (status_validator(SHADER(iter_count).status)) {
+               set_shad_status(SHADERS_LINKING_VALIDATION_ERROR);
+               set_shad_status(SHADERS_LINKING_FAILED);
+               set_bin_status(SHADERS_LINKING_FAILED);
 
-//         va_list va_binaries;
-//         va_start(va_binaries, binary_count);
+               return SHE_ERROR;
+       }
 
-//         prog_to_link->shader_prog_id = glCreateProgram();
+      // if (check_shader_status(shader_to_shadle->status, SHADER_DESTROYED)) {
+      //          printf(BLUE "Linking error:" END " cannot link, because shader was already destroyed\n");
+      //          shader_write_info(shader_to_handle, logical_number);
+      //          return SHE_ERROR;
+      //  }
 
-//         int ret_val   = 0;
-//         int error_val = 0;
+      //  if (check_shader_status(shader_to_handle->status, SHADER_LINKED)) {
+      //          printf(YELLOW "Linking warning: " END " already linked shader. It is probably error\n");
+      //          shader_write_info(shader_to_handle, logical_number);
+      //  }
 
-//         bin_shaders* binaries = (bin_shaders*)calloc(binary_count, sizeof(bin_shaders));
-//         bin_shaders* curr_bin = nullptr;
-//         // HANDLE
-
-//         for (int bin_count = 0; bin_count < binary_count; ++bin_count) {
-
-//                 curr_bin = va_arg(va_binaries, bin_shaders*);
-
-//                 if(curr_bin == nullptr) {
-//                         ErrorPrint(FATAL_RED "ERROR: " END
-//                                    "nullptr bin_shaders pass in this function."
-//                                    "Skipping this file linking\n");
-//                         set_shad_prog_stat(SHADER_PROG_BIN_FILE_IS_NULLPTR);
-//                         continue;
-//                 }
-
-//                 for(int shader_count = 0; shader_count < curr_bin->shaders_count; ++shader_count) {
+       return 0;
 
 
+}
 
-//                         glAttachShader(prog_to_link->shader_prog_id,
-//                                        SHADER(iter_count).shader_id);
+static int bin_shader_error_count(long long bin_status)
+{
+        int is_error = 0;
 
-//                         error_val = shader_link_error_handler(&SHADER(iter_count));
+        is_error += check_bin_stat(SHADERS_LINKING_FAILED);
+        is_error += check_bin_stat(SHADERS_INITIALIZATION_FAILED);
+        is_error += check_bin_stat(SHADERS_COMPILATION_FAILED);
+        is_error += check_bin_stat(BIN_SHADERS_LINKING_BIN_UNITIALIZED);
+        is_error += check_bin_stat(BIN_SHADERS_LINKING_BIN_UNCOMPILED);
+        is_error += check_bin_stat(BIN_SHADERS_LINKING_BIN_WITH_ERRORS);
 
-//                         if(error_val) {
-//                                 ret_val = error_val;
-//                                 continue;
-//                         }
-//                 }
-//         }
+        return is_error;
+}
 
-//         glLinkProgram(prog_to_link->shader_prog_id);
-//         glValidateProgram(prog_to_link->shader_prog_id);
+static int validate_bin(bin_shaders* binary_shaders)
+{
+        int is_error = 0;
+        int bin_status = binary_shaders->status;
 
-//         return ret_val;
+        if((is_error = bin_shader_error_count(binary_shaders->status)) != 0) {
+                set_bin_status(BIN_SHADERS_LINKING_BIN_WITH_ERRORS);
+        }
 
-// }
+        if(!check_bin_stat(SHADERS_INITIALIZED)) {
+                set_bin_status(BIN_SHADERS_LINKING_BIN_UNITIALIZED);
+                is_error += 1;
+        }
+
+        if(!check_bin_stat(SHADERS_COMPILED)) {
+                set_bin_status(BIN_SHADERS_LINKING_BIN_UNCOMPILED);
+                is_error += 1;
+        }
+
+
+        return is_error ? 1 : 0;
+}
+
+
+int shaders_link_(shader_program* prog_to_link, int binary_count, ...)
+{
+        if (prog_to_link == nullptr) {
+                ErrorPrint(FATAL_RED "ERROR: " END
+                           "pointer to program in shader_link is nullptr\n");
+                return SHE_PROGRAM_LINK_ERROR;
+        }
+
+        va_list va_binaries;
+        va_start(va_binaries, binary_count);
+
+        prog_to_link->shader_prog_id = glCreateProgram();
+
+        int ret_val   = 0;
+        int error_val = 0;
+
+        bin_shaders* binaries = (bin_shaders*)calloc(binary_count, sizeof(bin_shaders));
+        bin_shaders* binary_shaders = nullptr;
+        // HANDLE
+
+        for (int bin_count = 0; bin_count < binary_count; ++bin_count) {
+
+                binary_shaders = va_arg(va_binaries, bin_shaders*);
+
+                if (binary_shaders == nullptr) {
+                        ErrorPrint(FATAL_RED "ERROR: " END
+                                   "nullptr bin_shaders pass in this function."
+                                   "Skipping this file linking\n");
+
+//                        set_shad_prog_stat(SHADER_PROG_BIN_FILE_IS_NULLPTR);
+                        continue;
+                }
+                set_bin_status(SHADERS_LINKED);
+
+                if (validate_bin(binary_shaders)) {
+                        set_bin_status(SHADERS_LINKING_FAILED);
+                }
+
+                for(int shader_count = 0; shader_count < binary_shaders->shader_count; ++shader_count) {
+
+                        if (shader_to_link_validate(binary_shaders, shader_count)) {
+                                // SAVE shader prog status
+                                continue;
+                        }
+
+                        glAttachShader(prog_to_link->shader_prog_id,
+                                       SHADER(shader_count).shader_id);
+
+
+                        // TODO
+
+                }
+
+
+
+        }
+
+        glLinkProgram(prog_to_link->shader_prog_id);
+        // TODO CHECK THIS
+        glValidateProgram(prog_to_link->shader_prog_id);
+
+        return 0;
+
+}
 
 
 #undef SHADER
-

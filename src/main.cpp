@@ -107,13 +107,12 @@ int make_triangle(GLuint* p_shader_prog, GLuint* p_vao)
 int unit_test()
 {
         bin_shaders bin = {};
-        init_shaders_types(&bin, GL_FRAGMENT_SHADER, GL_VERTEX_SHADER, GL_VERTEX_SHADER,
-                                    GL_TESS_EVALUATION_SHADER);
-        bin.shaders[0].status = 2;
-        bin.shaders[0].shader_type = 0;
-
+        init_shaders_types(&bin, 5, GL_VERTEX_SHADER);
 
         shaders_compile(&bin, "fragment_shader.txt", "vertex_shader.txt");
+
+        shader_program prog = {};
+        shaders_link(&prog, &bin);
 
         bin_shaders_log(&bin);
         exit(0);
