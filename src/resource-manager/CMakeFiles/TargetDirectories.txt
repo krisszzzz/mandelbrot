@@ -1,3 +1,0 @@
-/mnt/Asm/Hack/Patch/src/resource-manager/CMakeFiles/resource_manager.dir
-/mnt/Asm/Hack/Patch/src/resource-manager/CMakeFiles/edit_cache.dir
-/mnt/Asm/Hack/Patch/src/resource-manager/CMakeFiles/rebuild_cache.dir

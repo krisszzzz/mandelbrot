@@ -5,7 +5,7 @@ project(resource_manager)
 
 set(CXX_STANDARD 17)
 
-add_library(resource_manager STATIC src/shader_handler.h src/shader_handler.cpp src/murmurhash.h src/murmurhash.cpp
+add_library(resource_manager STATIC src/resource_manager.h src/resource_manager.cpp src/murmurhash.h src/murmurhash.cpp
                                     ${CMAKE_SOURCE_DIR}/lib/log.h ${CMAKE_SOURCE_DIR}/lib/log.cpp)
 
 target_link_libraries(resource_manager glad)

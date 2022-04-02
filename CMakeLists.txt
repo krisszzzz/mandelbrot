@@ -1,5 +1,4 @@
 
-
 cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
 
@@ -21,9 +20,10 @@ add_subdirectory(lib/GLAD)
 add_subdirectory(src/resource-manager)
 
 include_directories(src/resource-manager/src)
+include_directories(src)
 include_directories(lib/)
 
-add_executable(Patcher src/main.cpp lib/log.cpp)
+add_executable(Patcher src/main.cpp lib/log.cpp src/WinMain.h src/WinMain.cpp src/Patcher/Patcher.cpp)
 
 target_link_libraries(Patcher glfw)
 target_link_libraries(Patcher glad)
