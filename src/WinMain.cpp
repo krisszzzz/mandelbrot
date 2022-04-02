@@ -99,7 +99,7 @@ int make_shad_prog_n_res_man(const char *const execution_path, const char *const
         init_resource_manager(&res_man, execution_path);
         bind_resource_manager(res_man);
 
-        create_shader_prog(shader_prog_name, "res/vertex_shader.glsl", "res/fragment_shader.glsl");
+        create_shader_prog(shader_prog_name, "res/Shaders/vertex_shader.glsl", "res/Shaders/fragment_shader.glsl");
         resource_manager_shader_log();
 
         glfwSetTime(1);

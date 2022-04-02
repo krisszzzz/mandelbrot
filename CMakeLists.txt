@@ -29,5 +29,5 @@ target_link_libraries(Patcher glfw)
 target_link_libraries(Patcher glad)
 target_link_libraries(Patcher resource_manager)
 
-file(COPY ${CMAKE_SOURCE_DIR}/res DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/res)
+file(COPY ${CMAKE_SOURCE_DIR}/res DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 #configure_file(src/fragment_shader.txt ${CMAKE_CURRENT_BINARY_DIR}/fragment_shader.txt)

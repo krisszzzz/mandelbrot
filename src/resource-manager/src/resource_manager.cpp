@@ -35,8 +35,8 @@ static int save_shader_path(shader* shader_to_save_path, const char* source)
 
         if (source_len + binded_manager.shader_names_offset >= binded_manager.shader_names_size) {
                 binded_manager.shader_names_size *= 2; // Double the allocated memory
-                realloc(binded_manager.shader_names_chunk,
-                        binded_manager.shader_names_size * sizeof(char));
+                binded_manager.shader_names_chunk = (char*)realloc(binded_manager.shader_names_chunk,
+                                                                   binded_manager.shader_names_size * sizeof(char));
 
                 if(binded_manager.shader_names_chunk == nullptr) {
                         ErrorPrint(RED "ERROR: " END "Memory reallocation error\n");
@@ -206,24 +206,6 @@ char* load_file_source(const char *const src_file_path)
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 // Checkers, validators, dump etc.
 
-static int validate_shader_type(GLenum shader_type)
-{
-        switch(shader_type) {
-                case GL_VERTEX_SHADER:
-                case GL_TESS_CONTROL_SHADER:
-                case GL_TESS_EVALUATION_SHADER:
-                case GL_GEOMETRY_SHADER:
-                case GL_FRAGMENT_SHADER:
-                case GL_COMPUTE_SHADER: {
-                        return 1;
-                }
-
-                default:
-                        return 0;
-        }
-}
-
-
 static inline int check_shader_status(long long shader_status, int status)
 {
         return (shader_status >> status) & 1; // Get status bit
@@ -292,6 +274,7 @@ static inline void print_shader_errors(shader* shaders)
         if (check_shader_status(shaders->status, SHADERS_LINKING_GL_ATTACH_ERROR)) {
                 printf(RED "GL_ATTACH_ERROR\n");
         }
+        printf("\n");
 
 }
 
@@ -309,7 +292,7 @@ static int shader_log(shader* shaders, int iter_count)
 
                 printf(BLUE "%-25s " END, shader_type_str_by_iter_count(iter_count));
 
-                if (shaders->status != SHADERS_COMPILED & SHADERS_LINKED) {
+                if (shaders->status != (SHADERS_COMPILED & SHADERS_LINKED)) {
                         printf(RED "*");
                 } else {
                         printf(GREEN);
@@ -320,7 +303,7 @@ static int shader_log(shader* shaders, int iter_count)
 
                 printf(BLUE "shader info:\n"
                             "shader_id = %u\n"
-                            "shader_hash = %lld\n" END,
+                            "shader_hash = %llu\n" END,
                             shaders->shader_id,
                             shaders->shader_hash
                        );
@@ -344,8 +327,8 @@ static int shader_program_log(shader_program* prog)
                     "__________________________________\n"
                     "SHADER_PROGRAM LOG\n"
                     "shader_program log:\n"
-                    "shader_prog_id    = %d\n"
-                    "shader_prog_hash  = %lld\n" END,
+                    "shader_prog_id    = %u\n"
+                    "shader_prog_hash  = %llu\n" END,
                     prog->shader_prog_id,
                     prog->shader_prog_hash);
 
@@ -552,8 +535,9 @@ int create_shader_prog(const char* const shader_prog_name, const char* const ver
 
         if (binded_manager.shader_program_count >= binded_manager.shader_program_size - 1) {
                 binded_manager.shader_program_size *= 2;
-                realloc(binded_manager.programs,
-                        sizeof(shader_program) * binded_manager.shader_program_size);
+                binded_manager.programs = (shader_program*)realloc(binded_manager.programs,
+                                                                   sizeof(shader_program) *
+                                                                   binded_manager.shader_program_size);
 
                 if (binded_manager.programs == nullptr) {
                         ErrorPrint(RED "Memory allocation for programs was errored" END);
