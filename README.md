@@ -1,5 +1,5 @@
 
-![mandelbrot](https://github.com/krisszzzz/mandelbrot/tree/master/screenshots/2022-04-16_11-25.png)
+![mandelbrot](screenshots/2022-04-16_11-25.png)
 
 This project draw a mandelbrot using AVX2 optimizations.  
 The main goal of this project is to show  
@@ -31,5 +31,5 @@ Average time:
 | 172.85 s  | 23.98 s |
 
 Screenshot of working program:  
-![Results](https://github.com/krisszzzz/mandelbrot/tree/master/screenshots/2022-04-16_12-03.png)
+![Results](screenshots/2022-04-16_12-03.png)
 
