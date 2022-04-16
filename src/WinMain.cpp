@@ -154,7 +154,7 @@ void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points) __attribut
 void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points)
 {
         const __m256 R_MAX    = _mm256_set1_ps(RADIUS_MAX);
-        const __m256 _7_to_0 =  _mm256_set_ps(  8.0f, 7.0f,  6.0f, 
+        const __m256 _7_to_0 =  _mm256_set_ps(  7.0f, 6.0f,  5.0f, 
                                                 4.0f, 3.0f,  2.0f, 
                                                 1.0f, 0.0f);
 
@@ -168,7 +168,7 @@ void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points)
                         float y0 = Y_SCALE * (points[points_pos + 1]) + Y_OFFSET;
 
                         __m256 X0 = _mm256_add_ps(_mm256_set1_ps(x0), 
-                                                  _mm256_mul_ps (_7_to_0, _mm256_set1_ps(X_SCALE * X_STEP)));
+                                                  _mm256_mul_ps (_7_to_0, _mm256_set1_ps(2 * X_SCALE * X_STEP)));
                         __m256 Y0 = _mm256_set1_ps(y0);
                                
                         __m256 X = X0;
