@@ -11,7 +11,7 @@
 #define POINTS_COUNT         PIXELS_COUNT * PIXEL_COORD_COUNT
 #define COLORS_COUNT         PIXELS_COUNT 
 #define MAX_DEPTH            256
-#define RADIUS_MAX           4.f
+#define RADIUS_MAX           100.f
 #define X_STEP               1.0f / (WINDOW_WIDTH)
 
 float  X_SCALE  = 1.25 / 4.0f;
@@ -153,8 +153,8 @@ void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points) __attribut
 
 void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points)
 {
-        const __m256 R_MAX    = _mm256_set1_ps(100.0f);
-        const __m256 _7_to_0 =  _mm256_set_ps(  7.0f, 6.0f,  5.0f, 
+        const __m256 R_MAX    = _mm256_set1_ps(RADIUS_MAX);
+        const __m256 _7_to_0 =  _mm256_set_ps(  8.0f, 7.0f,  6.0f, 
                                                 4.0f, 3.0f,  2.0f, 
                                                 1.0f, 0.0f);
 
@@ -168,7 +168,7 @@ void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points)
                         float y0 = Y_SCALE * (points[points_pos + 1]) + Y_OFFSET;
 
                         __m256 X0 = _mm256_add_ps(_mm256_set1_ps(x0), 
-                                                 _mm256_mul_ps (_7_to_0, _mm256_set1_ps(X_SCALE * X_STEP)));
+                                                  _mm256_mul_ps (_7_to_0, _mm256_set1_ps(X_SCALE * X_STEP)));
                         __m256 Y0 = _mm256_set1_ps(y0);
                                
                         __m256 X = X0;
@@ -181,7 +181,7 @@ void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points)
                                 __m256 Y2   = _mm256_mul_ps(Y, Y);
                                 __m256 R2   = _mm256_add_ps(X2, Y2);
 
-                                __m256 mask = _mm256_cmp_ps(R2, R_MAX, _CMP_LT_OS);
+                                __m256 mask = _mm256_cmp_ps(R2, R_MAX, _CMP_LT_OQ);
                                 int i_mask  = _mm256_movemask_ps(mask);
 
                                 if (!i_mask) break; 
@@ -199,7 +199,7 @@ void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points)
                                 
                         for (int i = 0; i < 8; ++i) { 
                                 int* pn = (int*)&N + i;
-                                colors[pixel_pos + i] = cos(*pn);
+                                colors[pixel_pos + i] = sin(*pn);
                         }
 
                 }
@@ -301,9 +301,8 @@ void WinMain(GLFWwindow* window, GLuint shader_program)
 
                 glClear(GL_COLOR_BUFFER_BIT);
 
-                start = clock();
-
-                enerate_color_mandelbrot_avx2(colors, points);
+                generate_color_mandelbrot_avx2(colors, points);
+                // generate_color_mandelbrot(colors, points);
 
                 
 
