@@ -2,8 +2,7 @@
 ![mandelbrot](screenshots/2022-04-16_11-25.png)
 
 This project draw a mandelbrot using AVX2 optimizations.  
-The main goal of this project is to show  
-how understanding processor work you can improve code.  
+The main goal of this project is to show how understanding processor work you can improve code.  
 
 Used gcc compilation flags:  
 ~~~
