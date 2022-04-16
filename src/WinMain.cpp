@@ -12,7 +12,7 @@
 #define COLORS_COUNT         PIXELS_COUNT 
 #define MAX_DEPTH            256
 #define RADIUS_MAX           100.f
-#define X_STEP               1.0f / (WINDOW_WIDTH)
+#define X_STEP               2.0f / (WINDOW_WIDTH)
 
 float  X_SCALE  = 1.25 / 4.0f;
 float  Y_SCALE  = 0.2f;
@@ -168,7 +168,7 @@ void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points)
                         float y0 = Y_SCALE * (points[points_pos + 1]) + Y_OFFSET;
 
                         __m256 X0 = _mm256_add_ps(_mm256_set1_ps(x0), 
-                                                  _mm256_mul_ps (_7_to_0, _mm256_set1_ps(2 * X_SCALE * X_STEP)));
+                                                  _mm256_mul_ps (_7_to_0, _mm256_set1_ps(X_SCALE * X_STEP)));
                         __m256 Y0 = _mm256_set1_ps(y0);
                                
                         __m256 X = X0;
