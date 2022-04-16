@@ -1,21 +1,25 @@
 #include <WinMain.h>
-#include <emmintrin.h>
 #include <time.h>
-#include <immintrin.h>
 #include <cmath>
 
 #define PIXEL_COORD_COUNT    2
+#define PIXEL_RGB_BYTE_COUNT 3
+
 #define WINDOW_WIDTH         1920
 #define WINDOW_HEIGHT        1080
+
+#define X_STEP               1.0 / (WINDOW_WIDTH / 2.0)
+#define Y_STEP               1.0 / (WINDOW_WIDTH / 2.0)
+
 #define PIXELS_COUNT         WINDOW_WIDTH * WINDOW_HEIGHT
 #define POINTS_COUNT         PIXELS_COUNT * PIXEL_COORD_COUNT
-#define COLORS_COUNT         PIXELS_COUNT 
+#define COLORS_COUNT         PIXELS_COUNT * PIXEL_RGB_BYTE_COUNT
 #define MAX_DEPTH            256
-#define RADIUS_MAX           4.f
-#define X_STEP               1.0f / (WINDOW_WIDTH)
+#define RADIUS_MAX           100.f
 
 float  X_SCALE  = 1.25 / 4.0f;
 float  Y_SCALE  = 0.2f;
+
 float  X_OFFSET = 0.0f;
 float  Y_OFFSET = 0.0f;
 
@@ -31,13 +35,13 @@ void glfw_key_callback(GLFWwindow* p_window, int key, int scancode, int action, 
                 X_SCALE /= 2.0f;
                 Y_SCALE /= 2.0f;
         } else if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
-                Y_OFFSET -= (0.2f * Y_SCALE);
+                Y_OFFSET -= 0.2f;
         } else if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
-                Y_OFFSET += (0.2f * Y_SCALE);
+                Y_OFFSET += 0.2f;
         } else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-                X_OFFSET -= (0.2f * X_SCALE);
+                X_OFFSET -= 0.2f;
         } else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-                X_OFFSET += (0.2f * X_SCALE);
+                X_OFFSET += 0.2f;
         }
 
 }
@@ -122,7 +126,7 @@ static void generate_buffers(GLfloat   points[POINTS_COUNT], GLfloat colors[COLO
 
         glEnableVertexAttribArray(1);
         glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
-        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+        glVertexAttribPointer(1, PIXEL_RGB_BYTE_COUNT, GL_FLOAT, GL_FALSE, 0, nullptr);
 
 
         *p_points_vbo = points_vbo;
@@ -149,62 +153,6 @@ void init_points(float* points)
         }
 }
 
-void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points) __attribute__((nothrow, hot));
-
-void generate_color_mandelbrot_avx2(GLfloat* colors, GLfloat* points)
-{
-        const __m256 R_MAX    = _mm256_set1_ps(100.0f);
-        const __m256 _7_to_0 =  _mm256_set_ps(  7.0f, 6.0f,  5.0f, 
-                                                4.0f, 3.0f,  2.0f, 
-                                                1.0f, 0.0f);
-
-        for (int x = 0; x < WINDOW_WIDTH; x += 8) {
-   
-                for (int y = 0; y < WINDOW_HEIGHT; ++y) {
-                        int pixel_pos  = x + y * WINDOW_WIDTH;
-                        int points_pos = pixel_pos * 2;
-
-                        float x0 = X_SCALE * (points[points_pos]) + X_OFFSET;
-                        float y0 = Y_SCALE * (points[points_pos + 1]) + Y_OFFSET;
-
-                        __m256 X0 = _mm256_add_ps(_mm256_set1_ps(x0), 
-                                                 _mm256_mul_ps (_7_to_0, _mm256_set1_ps(X_SCALE * X_STEP)));
-                        __m256 Y0 = _mm256_set1_ps(y0);
-                               
-                        __m256 X = X0;
-                        __m256 Y = Y0;
-                        
-                        __m256i N  = _mm256_setzero_si256();
-
-                        for (int n = 0; n < MAX_DEPTH; ++n) {
-                                __m256 X2   = _mm256_mul_ps(X, X);
-                                __m256 Y2   = _mm256_mul_ps(Y, Y);
-                                __m256 R2   = _mm256_add_ps(X2, Y2);
-
-                                __m256 mask = _mm256_cmp_ps(R2, R_MAX, _CMP_LT_OS);
-                                int i_mask  = _mm256_movemask_ps(mask);
-
-                                if (!i_mask) break; 
-
-                                N           = _mm256_sub_epi32(N, _mm256_castps_si256(mask));
-                                __m256 XY   = _mm256_mul_ps(X, Y);
-
-                                X = _mm256_add_ps (_mm256_sub_ps (X2, Y2), X0);
-                                Y = _mm256_add_ps (_mm256_add_ps (XY, XY), Y0);
-                        }
-
-//                        _mm256_storeu_ps(&colors[pixel_pos], 
-//                                             _mm256_cvtepi32_ps(_mm256_srli_epi32(N, 8))
-//                               );
-                                
-                        for (int i = 0; i < 8; ++i) { 
-                                int* pn = (int*)&N + i;
-                                colors[pixel_pos + i] = cos(*pn);
-                        }
-
-                }
-        }
-}
 
 inline void count_N(int N[4], float X0[4], float Y0[4])
 {
@@ -243,9 +191,11 @@ inline void count_color(GLfloat* colors, int N[4], int first_color_pos)
 {
         for (int iter_count = 0; iter_count < 4; ++iter_count) {
 
-                int colors_pos      = first_color_pos + iter_count;
+                int colors_pos      = first_color_pos + 2 * iter_count;
+                colors_pos         += iter_count;
                 colors[colors_pos]  = sin(N[iter_count]);
         }
+
 
 }
 
@@ -259,7 +209,7 @@ void generate_color_mandelbrot(GLfloat* colors, GLfloat* points)
 
                 for (int y = 0; y < WINDOW_HEIGHT; ++y) {
 
-                        int first_color_pos  = (x +  y * WINDOW_WIDTH);
+                        int first_color_pos  = 3 * (x +  y * WINDOW_WIDTH);
                         int points_pos       = 2 * (x +  y * WINDOW_WIDTH);
 
                         x0 = X_SCALE * (points[points_pos] + X_OFFSET);
@@ -299,19 +249,16 @@ void WinMain(GLFWwindow* window, GLuint shader_program)
        while (!glfwWindowShouldClose(window)) {
                 /* Render here */
 
+                start  = clock();
                 glClear(GL_COLOR_BUFFER_BIT);
 
-                start = clock();
-
-                enerate_color_mandelbrot_avx2(colors, points);
-
-                
+                generate_color_mandelbrot(colors, points);
 
                 glBindBuffer(GL_ARRAY_BUFFER, colors_vbo);
                 glBufferData(GL_ARRAY_BUFFER, COLORS_COUNT * sizeof(GLfloat), colors, GL_DYNAMIC_DRAW);
 
-                glVertexAttribPointer(color_position, 1,  GL_FLOAT,
-                                      GL_FALSE,       0,  nullptr);
+                glVertexAttribPointer(color_position, PIXEL_RGB_BYTE_COUNT,  GL_FLOAT,
+                                      GL_FALSE,       0,                nullptr);
 
                 glUseProgram(shader_program);  // Use shader program that was
                 glBindVertexArray(vao);        // generated bu glfw_make_triangle
@@ -323,7 +270,9 @@ void WinMain(GLFWwindow* window, GLuint shader_program)
                 /* Poll for and process events */
                 glfwPollEvents();
 
+                stop = clock();
 
+                printf("FPS: %lf\n", 1000000.0 / (stop - start));
 
 //                first_time = second_time;
 
