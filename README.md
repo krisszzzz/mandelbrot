@@ -29,6 +29,4 @@ Average time:
 | :-------- | :------ |
 | 172.85 s  | 23.98 s |
 
-Screenshot of working program:  
-![Results](screenshots/2022-04-16_12-03.png)
 
